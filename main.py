@@ -1,6 +1,6 @@
 import discord
 import json
-from datetime import datetime
+from datetime import date
 from commands.botScript import Spreadsheet
 
 class FunguyBot(discord.Client):
@@ -13,6 +13,9 @@ class FunguyBot(discord.Client):
     print('Logged on as', self.user)
 
   async def on_message(self, message):
+    """
+      Bot Commands
+    """
     if message.content.startswith('!funguy'):
       content = [i for i in message.content.split(' ') if i != '']
       embed = discord.Embed(title="No Command Detected",
@@ -26,11 +29,20 @@ class FunguyBot(discord.Client):
         embed.set_author(name='| Funguy Help Menu', icon_url=message.author.avatar_url)
 
       elif content[1] == 'joindrop':
-        res = self.sp.join_airdrop(message.author.id, message.author.name + "#" + message.author.discriminator, content[2])
+        res = self.sp.join_airdrop(message.author.id)
 
         if res['status']:
           description = 'Successfully joined airdrop! Good luck!'
           color = discord.Color.green()
+
+          #################3
+          # To DO:
+          #################
+          # Joind_airdrop return newMonth
+          # If true, that means we are in new month and you need to call this function
+          # populate_last_month_values(nameAirDropDate) (Last month number)
+          # Not sure how you gonna do it :^)
+          
         else:
           description = 'Failed to join. ' + res['errMsg']
           color = discord.Color.red()
@@ -44,6 +56,12 @@ class FunguyBot(discord.Client):
           description = 'Insufficient arguments. Please include your wallet address, number of Funguys you\'ve added, and the oldest Funguy you have.'
           color = discord.Color.blue()
         else:
+          
+          #################3
+          # To DO:
+          #################
+          # Check if right order of parameters
+          
           res = self.sp.insert_user(message.author.id, message.author.name + "#" + message.author.discriminator, content[2], content[3], content[4])
           if res['status']:
             description = 'Successfully added! You have ' + res['numFunguys'] + ' Funguys, with the oldest one being ' + res['oldestDate'] + '.'
@@ -61,6 +79,11 @@ class FunguyBot(discord.Client):
           description = 'Insufficient arguments. Please include either the number of Funguys you\'ve added or the earliest date you\'ve been holding Funguy NFTs.'
           color = discord.Color.blue()
         else:
+
+          #############3
+          # Update to do time fix TODO
+          #############
+
           if self.check_update_arguments(content[2]):
             res = self.sp.update_user(message.author.id, content[2])
             if res['status']:
@@ -77,8 +100,14 @@ class FunguyBot(discord.Client):
                               color=color)
         embed.set_author(name='| Update Funguys', icon_url=message.author.avatar_url)
 
+      #########33
+      # TODO
+      ###########3
+      # Add wallet addrss too
+
+
       elif content[1] == 'view':
-        res = self.sp.check_user(message.author.id, content[2])
+        res = self.sp.check_user(message.author.id)
         if res['status']:
           description = 'You have ' + res['numFunguys'] + ' Funguys, with the oldest one being ' + res['oldestDate'] + '.'
           color = discord.Color.green()
@@ -90,11 +119,17 @@ class FunguyBot(discord.Client):
                               color=color)
         embed.set_author(name='| Check Funguys', icon_url=message.author.avatar_url)
 
+      ##########3
+      # Todo, add calcualte function
       elif content[1] == 'calculate' and message.author.id in self.admins:
         # insert Frendy function here
         embed = discord.Embed(description="Calculated $TSHY drops.",
                               color=discord.Color.green())  
         embed.set_author(name='| Calculate Monthly Drops', icon_url=message.author.avatar_url)
+
+      ##########
+      # Also add fucntion to call populate_last_month_values for admin only
+      #####
 
       await message.channel.send(embed=embed)
 
@@ -107,7 +142,12 @@ class FunguyBot(discord.Client):
         return False
     
     try:
-      datetime(input)
+      ########3
+      # Todo
+      #######
+      # make sure datetime is like yyyy-mm-dd
+      
+      date(input)
       return True
     except:
       return False
