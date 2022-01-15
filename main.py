@@ -160,11 +160,13 @@ class FunguyBot(discord.Client):
       return False
 
 if __name__ == '__main__':
+  keep_alive()
+
   admins = os.getenv('admins')
   discord_token = os.getenv('discord_token')
   
   FunguyBot(admins).run(discord_token)
-  keep_alive()
+
   # f = open('credentials/funguyfamily.json')
   # data = json.load(f)
 
