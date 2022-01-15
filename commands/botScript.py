@@ -64,12 +64,12 @@ class Spreadsheet():
         }
  
     # User Function
-    def insert_user(self, discordID: str, walletAddress: str, numberOfFunGuys: int, dateOfOldestFunGuy: datetime)-> str:
+    def insert_user(self, userID: int, discordID: str, walletAddress: str, numberOfFunGuys: int, dateOfOldestFunGuy: datetime)-> str:
         """
         Guarantees that there is only one Discord user and only one wallet with that address.
         """
         workSheet = self.sp.worksheet("UserTbl")
-        response = self.check_user(discordID, walletAddress)
+        response = self.check_user(userID, walletAddress)
 
         if response['status']:
             return {
@@ -80,7 +80,7 @@ class Spreadsheet():
             }
 
         # If the wallet and DiscordId has never being used, add a new user
-        workSheet.append_row([len(workSheet.get_all_values()), discordID, walletAddress, numberOfFunGuys, dateOfOldestFunGuy])
+        workSheet.append_row([str(userID), discordID, walletAddress, numberOfFunGuys, dateOfOldestFunGuy])
 
         return {
             'status': True,
@@ -89,12 +89,12 @@ class Spreadsheet():
             'oldestDate': dateOfOldestFunGuy,
         }
 
-    def update_user(self, discordID: str, walletAddress: str, numberOfFunGuys: int, dateOfOldestFunGuy: datetime) -> str:
+    def update_user(self, userID: int, walletAddress: str, numberOfFunGuys: int) -> str:
         """
         Update Funguy status of the Discord user.
         """
         workSheet = self.sp.worksheet("UserTbl")
-        response = self.check_user(discordID, walletAddress)
+        response = self.check_user(userID, walletAddress)
 
         if not response['status']:
             return {
@@ -104,28 +104,27 @@ class Spreadsheet():
                 'oldestDate': -1
             }
 
-        workSheet.update_cell(response['discordIDRow'].row, 4, numberOfFunGuys)
-        workSheet.update_cell(response['discordIDRow'].row, 5, dateOfOldestFunGuy)
+        workSheet.update_cell(response['userIDRow'].row, 4, numberOfFunGuys)
 
         return {
             'status': True,
             'errMsg': None,
-            'numFunguys': workSheet.cell(response['discordIDRow'].row, 4).value,
-            'oldestDate': workSheet.cell(response['discordIDRow'].row, 5).value
+            'numFunguys': workSheet.cell(response['userIDRow'].row, 4).value,
+            'oldestDate': response['oldestDate']
         }
 
-    def check_user(self, discordID: str, walletAddress: str):
+    def check_user(self, userID: str, walletAddress: str):
         """
         Returns the user's number of Funguys and the oldestDate of their Funguy.
         """
         workSheet = self.sp.worksheet("UserTbl")
-        discordIDRow = workSheet.find(discordID)
+        userIDRow = workSheet.find(str(userID))
         walletAddressRow = workSheet.find(walletAddress)
 
-        if not discordIDRow:
+        if not userIDRow:
             return {
                 'status': False,
-                'errMsg': 'DiscordID not found.',
+                'errMsg': 'User not found.',
                 'discordIDRow': -1,
                 'numFunguys': -1,
                 'oldestDate': -1
@@ -143,9 +142,9 @@ class Spreadsheet():
         return {
             'status': True,
             'errMsg': None,
-            'discordIDRow': discordIDRow,
-            'numFunguys': workSheet.cell(discordIDRow.row, 4).value,
-            'oldestDate': workSheet.cell(discordIDRow.row, 5).value
+            'userIDRow': userIDRow,
+            'numFunguys': workSheet.cell(userIDRow.row, 4).value,
+            'oldestDate': workSheet.cell(userIDRow.row, 5).value
         }
 
 if __name__ == '__main__':
