@@ -3,6 +3,11 @@ import json
 from datetime import date
 from commands.botScript import Spreadsheet
 
+
+##############
+# To do, make bot only send messages in channel "bot-spam" 
+##############
+
 class FunguyBot(discord.Client):
   def __init__(self, admins):
     super().__init__()
@@ -40,8 +45,8 @@ class FunguyBot(discord.Client):
           #################
           # Joind_airdrop return newMonth
           # If true, that means we are in new month and you need to call this function
-          # populate_last_month_values(nameAirDropDate) (Last month number)
-          # Not sure how you gonna do it :^)
+          # populate_last_month_values(nameAirDropDate)
+          # Join_airdrop returns the previousAirDropName, use that for the populate_last_month_values(nameAirDropDate)
           
         else:
           description = 'Failed to join. ' + res['errMsg']
@@ -103,7 +108,7 @@ class FunguyBot(discord.Client):
       #########33
       # TODO
       ###########3
-      # Add wallet addrss too
+      # Add wallet addrss to description too
 
 
       elif content[1] == 'view':
@@ -119,8 +124,9 @@ class FunguyBot(discord.Client):
                               color=color)
         embed.set_author(name='| Check Funguys', icon_url=message.author.avatar_url)
 
-      ##########3
+      #############
       # Todo, add calcualte function
+      #############
       elif content[1] == 'calculate' and message.author.id in self.admins:
         # insert Frendy function here
         embed = discord.Embed(description="Calculated $TSHY drops.",

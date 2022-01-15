@@ -31,16 +31,17 @@ class Spreadsheet():
         utc = pytz.timezone('UTC')
         currentAirDropDate = datetime.now(utc)
         nameAirDropDate = str(currentAirDropDate.year) + '-' + str(currentAirDropDate.month) + '-01' 
-        newMonth = False
+        previousAirDropName = None
 
         # Check if we are in new month and need to create a new entry
         try:
             self.sp.worksheet(nameAirDropDate)  
-            newMonth = True
+            worksheet_list = self.sp.worksheets()
+            previousAirDropName = worksheet_list[-2].title           
         except Exception:
             self.create_worksheet(nameAirDropDate)
 
-        return [nameAirDropDate, newMonth]
+        return [nameAirDropDate, previousAirDropName]
 
     # Airdrop Functions
     def join_airdrop(self, userID: str) -> bool:
@@ -52,7 +53,7 @@ class Spreadsheet():
             return {
                 'status': response['status'],
                 'errMsg': response['errMsg'],
-                'newMonth': None
+                'previousAirDropName': None
             }
         
         nameAirDropDate = self.get_current_worksheet()
@@ -66,7 +67,7 @@ class Spreadsheet():
         return {
             'status': response['status'],
             'errMsg': response['errMsg'],
-            'newMonth': nameAirDropDateName[1]
+            'previousAirDropName': nameAirDropDateName[1]
         }
  
     def populate_last_month_values(self, nameAirDropDate):
@@ -179,7 +180,6 @@ class Spreadsheet():
         """
         workSheet = self.sp.worksheet("UserTbl")
         userIDRow = workSheet.find(str(userID))
-        
 
         if not userIDRow:
             return {
@@ -212,4 +212,3 @@ class Spreadsheet():
 
 if __name__ == '__main__':
     sp = Spreadsheet()
-    print(sp.check_user(1))
