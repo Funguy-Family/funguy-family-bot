@@ -1,157 +1,152 @@
-from datetime import datetime
 import pytz
-
 import gspread
+from datetime import datetime
 from oauth2client.service_account import ServiceAccountCredentials
 
-
-
-
-
-#first worksheet = 0
-class spreadSheet():
-
+class Spreadsheet():
     def __init__(self):
+        """
+        Establish credentials from `credentials/funguyfamily.json` and create sp.
+        """
         scope = ['https://www.googleapis.com/auth/drive']
         credentials = ServiceAccountCredentials.from_json_keyfile_name('credentials/funguyfamily.json', scope)
 
         gc = gspread.authorize(credentials)    
         self.sp = gc.open('FunGuy_test')     
-        
-    '''
-        Spread Sheet Functions
-    '''
 
-    #===============
-    # create a new spreadSheet
-    # with only one column (UserID)
-    #===============
-    # To do: add error check if worksheet name already exist
-    def createWorkSheet(self, name):
+    # Spreadsheet Functions
+    def create_worksheet(self, name: str):
+        """
+        Create a spreadsheet with only 1 column (userID).
+        """
+        assert (type(name) == str), "Worksheet name is not a string."
+        # TODO: add err check if worksheet name already exist
         workSheet = self.sp.add_worksheet(title=name, rows="1", cols="1")
         workSheet.append_row(["userID"])
-    
-    def doWeNeedToCreatedWorkSheet(self):
+
+    def get_current_worksheet(self):
+        """
+        Check if you need to create a worksheet. Creates a new one for a new month.
+        """
         utc = pytz.timezone('UTC')
         currentAirDropDate = datetime.now(utc)
         nameAirDropDate = str(currentAirDropDate.year) + '-' + str(currentAirDropDate.month)
-    
+
         # Check if we are in new month and need to create a new entry
         try:
             self.sp.worksheet(nameAirDropDate)  
-            isItCreated = True        
         except Exception:
-            isItCreated = False
-
-        if(not isItCreated):
-            self.createWorkSheet(nameAirDropDate)  
+            self.create_worksheet(nameAirDropDate)
 
         return nameAirDropDate
-    '''
-        Signing to AirDrop
-    '''
 
-    def joinAirDrop(self, discordID, walletAddress):
-
-        userIDList = self.checkUser(discordID, walletAddress)
-        userID = userIDList[1]
-        if(userID == -1):
-            return "Could not find UserID, please create a new entry beforing joininig"
+    # Airdrop Functions
+    def join_airdrop(self, discordID: str, walletAddress: str) -> bool:
+        """
+        Add user to airdrop.
+        """
+        response = self.check_user(discordID, walletAddress)
+        if not response['status']:
+            return {
+                'status': response['status'],
+                'errMsg': response['errMsg']
+            }
         
-        nameAirDropDate = self.doWeNeedToCreatedWorkSheet()
-
+        nameAirDropDate = self.get_current_worksheet()
         workSheet = self.sp.worksheet(nameAirDropDate)
-        
-        userIDRow = workSheet.find(userID)
-
-        if(userIDRow is None):
-            workSheet.append_row([userID])
+        userIDRow = workSheet.find(response.userID)
+        if userIDRow is None:
+            workSheet.append_row([response.userID])
             
-        return "You were added successfully"
-
-    def didIJoinAirDrop(self, discordID, walletAddress):
-
-        userIDList = self.checkUser(discordID, walletAddress)
-        userID = userIDList[1]
-        if(userID == -1):
-            return "Could not find this user in UserTbl, please create a new entry beforing joininig"
-        
-        nameAirDropDate = self.doWeNeedToCreatedWorkSheet()
-
-        workSheet = self.sp.worksheet(nameAirDropDate)
-        
-        userIDRow = workSheet.find(userID)
-
-        if(userIDRow is None):
-            return "You have not joined this airDrop: " + nameAirDropDate
-
-        return "You already joined this airDrop: " + nameAirDropDate
-
-    
-    '''
-        User functions
-    '''
-    
-    #===============
-    # Guarantees that there is only one DiscordUser and only one wallet with that address
-    #===============
-    def insertNewUser(self, discordID: str, walletAddress: str, numberOfFunGuys: int, dateOfOldestFunGuy: datetime)-> str:
+        return {
+            'status': response['status'],
+            'errMsg': response['errMsg']
+        }
+ 
+    # User Function
+    def insert_user(self, discordID: str, walletAddress: str, numberOfFunGuys: int, dateOfOldestFunGuy: datetime)-> str:
+        """
+        Guarantees that there is only one Discord user and only one wallet with that address.
+        """
         workSheet = self.sp.worksheet("UserTbl")
-        discordIDRow = workSheet.find(discordID)
-        walletAddressRow = workSheet.find(walletAddress)
+        response = self.check_user(discordID, walletAddress)
 
-        # If your discordID is already used.
-        if(discordIDRow is not None):
-            return "This discord user is already being used"
-        
-        elif(walletAddressRow is not None):
-            return "This wallet address is already being used"
+        if response['status']:
+            return {
+                'status': False,
+                'errMsg': 'User already exists.',
+                'numFunguys': response['numFunguys'],
+                'oldestDate': response['oldestDate']
+            }
 
-        # If the wallet and discordId has never being used, add a new user
+        # If the wallet and DiscordId has never being used, add a new user
         workSheet.append_row([len(workSheet.get_all_values()), discordID, walletAddress, numberOfFunGuys, dateOfOldestFunGuy])
 
-        return "Inserted new User"
+        return {
+            'status': True,
+            'errMsg': None,
+            'numFunguys': numberOfFunGuys,
+            'oldestDate': dateOfOldestFunGuy,
+        }
 
-    def updateUser(self, discordID: str, walletAddress: str, numberOfFunGuys: int, dateOfOldestFunGuy: datetime) -> str:
+    def update_user(self, discordID: str, walletAddress: str, numberOfFunGuys: int, dateOfOldestFunGuy: datetime) -> str:
+        """
+        Update Funguy status of the Discord user.
+        """
+        workSheet = self.sp.worksheet("UserTbl")
+        response = self.check_user(discordID, walletAddress)
+
+        if not response['status']:
+            return {
+                'status': False,
+                'errMsg': response['errMsg'],
+                'numFunguys': -1,
+                'oldestDate': -1
+            }
+
+        workSheet.update_cell(response['discordIDRow'].row, 4, numberOfFunGuys)
+        workSheet.update_cell(response['discordIDRow'].row, 5, dateOfOldestFunGuy)
+
+        return {
+            'status': True,
+            'errMsg': None,
+            'numFunguys': workSheet.cell(response['discordIDRow'].row, 4).value,
+            'oldestDate': workSheet.cell(response['discordIDRow'].row, 5).value
+        }
+
+    def check_user(self, discordID: str, walletAddress: str):
+        """
+        Returns the user's number of Funguys and the oldestDate of their Funguy.
+        """
         workSheet = self.sp.worksheet("UserTbl")
         discordIDRow = workSheet.find(discordID)
         walletAddressRow = workSheet.find(walletAddress)
 
-        # If your discordID is already used.
-        if(discordIDRow is None):
-            return "This discordUser is not an existing user"
-        
-        elif(walletAddressRow is None):
-            return "This wallet address does not exist"
-        
-        elif(discordIDRow.row != walletAddressRow.row):
-            return "This discordID does not match this Wallet"
+        if not discordIDRow:
+            return {
+                'status': False,
+                'errMsg': 'DiscordID not found.',
+                'discordIDRow': -1,
+                'numFunguys': -1,
+                'oldestDate': -1
+            }
 
- 
-        workSheet.update_cell(discordIDRow.row, 4, numberOfFunGuys)
-        workSheet.update_cell(discordIDRow.row, 5, dateOfOldestFunGuy)
+        if not walletAddressRow:
+            return {
+                'status': False,
+                'errMsg': 'Wallet address not found.',
+                'discordIDRow': -1,
+                'numFunguys': -1,
+                'oldestDate': -1
+            }
 
-        return "updated new user"
+        return {
+            'status': True,
+            'errMsg': None,
+            'discordIDRow': discordIDRow,
+            'numFunguys': workSheet.cell(discordIDRow.row, 4).value,
+            'oldestDate': workSheet.cell(discordIDRow.row, 5).value
+        }
 
-    def checkUser(self, discordID: str, walletAddress: str):
-        workSheet = self.sp.worksheet("UserTbl")
-        discordIDRow = workSheet.find(discordID)
-        walletAddressRow = workSheet.find(walletAddress)
-
-        if(discordIDRow.row == walletAddressRow.row):
-            return  "Your numberOfFunGuys is" + workSheet.cell(discordIDRow.row, 4).value + " and your oldestDate is " + workSheet.cell(discordIDRow.row, 5).value, workSheet.cell(discordIDRow.row, 1).value
-        else:
-            return "We couldn't find your information.", -1
-
-sp = spreadSheet()
-#print(sp.didIJoinAirDrop("PringlesOriginas#39682", "0xf7ea4da94Ef718DB72E96f692be43236FEb36ECE1"))
-
-
-#print(sp.joinAirDrop("PringlesOriginas#39682", "0xf7ea4da94Ef718DB72E96f692be43236FEb36ECE1"))
-#print(sp.checkUser("PringlesOriginas#3968", "0xf7ea4da94Ef718DB72E96f692be43236FEb36ECE"))
-
-#print(sp.updateUser("PringlesOriginas#3968", "0xf7ea4da94Ef718DB72E96f692be43236FEb36ECE","8",'12/01/23'))
-
-#sp.insertNewUser("PringlesOriginas#396812", "0xf7ea4da94Ef718DB72E96f692be43236FEb36ECE12221","6","huly")
-#sp.createWorkSheet("Testing")
-
+if __name__ == '__main__':
+    sp = Spreadsheet()
