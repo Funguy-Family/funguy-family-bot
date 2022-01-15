@@ -28,6 +28,8 @@ class Spreadsheet():
         scope = ['https://www.googleapis.com/auth/drive']
         credentials = ServiceAccountCredentials.from_json_keyfile_dict(variables_keys, scope)
 
+        # credentials = ServiceAccountCredentials.from_json_keyfile_name('credentials/funguyfamily.json', scope)
+
         gc = gspread.authorize(credentials)    
         self.sp = gc.open('FunGuy_test')     
 

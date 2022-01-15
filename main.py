@@ -163,4 +163,9 @@ if __name__ == '__main__':
   discord_token = os.getenv('discord_token')
   
   FunguyBot(admins).run(discord_token)
+
+  # f = open('credentials/funguyfamily.json')
+  # data = json.load(f)
+
+  # FunguyBot(data['admins']).run(data['discord_token'])
   
