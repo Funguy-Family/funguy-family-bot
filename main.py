@@ -2,7 +2,7 @@ import discord
 import json
 from datetime import date
 from commands.botScript import Spreadsheet
-
+import os
 
 ##############
 # To do, make bot only send messages in channel "bot-spam" 
@@ -159,8 +159,8 @@ class FunguyBot(discord.Client):
       return False
 
 if __name__ == '__main__':
-  f = open('credentials/funguyfamily.json')
-  data = json.load(f)
+  admins = os.getenv('admins')
+  discord_token = os.getenv('discord_token')
   
-  FunguyBot(data['admins']).run(data['discord_token'])
+  FunguyBot(admins).run(discord_token)
   

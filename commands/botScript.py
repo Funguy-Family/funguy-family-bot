@@ -2,14 +2,31 @@ import pytz
 import gspread
 from datetime import date, datetime, timedelta
 from oauth2client.service_account import ServiceAccountCredentials
-
+import os
 class Spreadsheet():
     def __init__(self):
         """
         Establish credentials from `credentials/funguyfamily.json` and create sp.
         """
+
+        # Junk solution for REplit since we cannot hide folders..
+        # use environ
+        variables_keys = {
+            "type": os.environ.get("type"),
+            "project_id": os.environ.get("project_id"),
+            "private_key_id": os.environ.get("private_key_id"),
+            "private_key": os.environ.get("private_key"),
+            "client_email": os.environ.get("client_email"),
+            "client_id": os.environ.get("client_id"),
+            "auth_uri": os.environ.get("auth_uri"),
+            "token_uri": os.environ.get("token_uri"),
+            "auth_provider_x509_cert_url": os.environ.get("auth_provider_x509_cert_url"),
+            "client_x509_cert_url": os.environ.get("client_x509_cert_url")
+        }        
+
+
         scope = ['https://www.googleapis.com/auth/drive']
-        credentials = ServiceAccountCredentials.from_json_keyfile_name('credentials/funguyfamily.json', scope)
+        credentials = ServiceAccountCredentials.from_json_keyfile_dict(variables_keys, scope)
 
         gc = gspread.authorize(credentials)    
         self.sp = gc.open('FunGuy_test')     
