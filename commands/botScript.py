@@ -39,7 +39,6 @@ class Spreadsheet():
         Create a spreadsheet with only 1 column (userID).
         """
         assert (type(name) == str), "Worksheet name is not a string."
-        # TODO: add err check if worksheet name already exist
         workSheet = self.sp.add_worksheet(title=name, rows="1", cols="1")
         workSheet.append_row(["userID", "walletAddress", "numberOfFunGuys", "dateOfOldestFunGuy", "TSHY COIN"])
 
@@ -90,7 +89,16 @@ class Spreadsheet():
         }
  
     def populate_last_month_values(self, nameAirDropDate):
-        workSheetAirDrop = self.sp.worksheet(nameAirDropDate)
+
+        try:
+            workSheetAirDrop = self.sp.worksheet(nameAirDropDate)
+        except Exception:
+            return {
+                'status': False,
+                'errMsg': "Invalid form name.",
+                'nameAirDropDate': nameAirDropDate
+            }
+
         workSheetUserID = self.sp.worksheet("UserTbl")
         listOfUserID = workSheetAirDrop.col_values(1)
 
@@ -113,8 +121,15 @@ class Spreadsheet():
         }
 
     def calculate_TSHY_coin(self, nameAirDropDate):
-        workSheetAirDrop = self.sp.worksheet(nameAirDropDate)
-
+        try:
+            workSheetAirDrop = self.sp.worksheet(nameAirDropDate)
+        except Exception:
+            return {
+                'status': False,
+                'errMsg': "Invalid form name.",
+                'nameAirDropDate': nameAirDropDate
+            }
+        
         listOfUserID = workSheetAirDrop.col_values(1)
 
         for i, userID in enumerate(listOfUserID, start=1):        

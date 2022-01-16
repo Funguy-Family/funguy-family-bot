@@ -14,6 +14,7 @@ class FunguyBot(discord.Client):
     super().__init__()
     self.sp = Spreadsheet()
     self.admins = admins
+    self.newMonth = None
 
   async def on_ready(self):
     print('Logged on as', self.user)
@@ -41,14 +42,10 @@ class FunguyBot(discord.Client):
           description = 'Successfully joined airdrop! Good luck!'
           color = discord.Color.green()
 
-          #################3
-          # To DO:
-          #################
-          # Joind_airdrop return newMonth
-          # If true, that means we are in new month and you need to call this function
-          # populate_last_month_values(nameAirDropDate)
-          # Join_airdrop returns the previousAirDropName, use that for the populate_last_month_values(nameAirDropDate)
-          
+          # If new month, populate airdrop columns
+          if res['previousAirDropName']:
+            self.newMonth = res['previousAirDropName']
+ 
         else:
           description = 'Failed to join. ' + res['errMsg']
           color = discord.Color.red()
@@ -62,11 +59,6 @@ class FunguyBot(discord.Client):
           description = 'Insufficient arguments. Please include your wallet address, number of Funguys you\'ve added, and the oldest Funguy you have.'
           color = discord.Color.blue()
         else:
-          
-          #################3
-          # To DO:
-          #################
-          # Check if right order of parameters
           
           res = self.sp.insert_user(message.author.id, message.author.name + "#" + message.author.discriminator, content[2], content[3], content[4])
           if res['status']:
@@ -86,12 +78,13 @@ class FunguyBot(discord.Client):
           color = discord.Color.blue()
         else:
 
-          #############3
-          # Update to do time fix TODO
-          #############
+          isItNumberOfFunGuys = self.check_update_arguments(content[2])
+          if isItNumberOfFunGuys is not None:
+            if isItNumberOfFunGuys:
+              res = self.sp.update_user(message.author.id, content[2], None)
+            else:
+              res = self.sp.update_user(message.author.id, None, content[2])
 
-          if self.check_update_arguments(content[2]):
-            res = self.sp.update_user(message.author.id, content[2])
             if res['status']:
               description = 'Successfully updated your status! You now have ' + res['numFunguys'] + ' Funguys, with the oldest one being ' + res['oldestDate'] + '.'
               color = discord.Color.green()
@@ -106,16 +99,10 @@ class FunguyBot(discord.Client):
                               color=color)
         embed.set_author(name='| Update Funguys', icon_url=message.author.avatar_url)
 
-      #########33
-      # TODO
-      ###########3
-      # Add wallet addrss to description too
-
-
       elif content[1] == 'view':
         res = self.sp.check_user(message.author.id)
         if res['status']:
-          description = 'You have ' + res['numFunguys'] + ' Funguys, with the oldest one being ' + res['oldestDate'] + '.'
+          description = 'Your wallet address: ' + res['walletAddress'] + ' have ' + res['numFunguys'] + ' Funguys, with the oldest one being ' + res['oldestDate'] + '.'
           color = discord.Color.green()
         else:
           description = 'Something went wrong retrieving your information. ' + res['errMsg']
@@ -125,20 +112,61 @@ class FunguyBot(discord.Client):
                               color=color)
         embed.set_author(name='| Check Funguys', icon_url=message.author.avatar_url)
 
-      #############
-      # Todo, add calcualte function
-      #############
-      elif content[1] == 'calculate' and message.author.id in self.admins:
-        # insert Frendy function here
-        embed = discord.Embed(description="Calculated $TSHY drops.",
-                              color=discord.Color.green())  
+      elif content[1] == 'calculate':
+        if message.author.id in self.admins:
+          if len(content) != 3:
+            description = 'Insufficient arguments. Please include the Airdrop month you want to calculate in the following format: YYYY-MM-01.'
+            color = discord.Color.blue()
+          else:
+            res = self.sp.calculate_TSHY_coin(message.author.id)
+            if res['status']:
+              description = "Calculated $TSHY drops. Please check form to verify values."
+              color = discord.Color.green()
+            else:
+              description = 'Something went wrong calculating the $TSHY coins. ' + res['errMsg']
+              color = discord.Color.red()              
+        else:
+          description = 'You are not authorize to use this command. Please contact a mod if you think this is an error.'
+          color = discord.Color.red()          
+
+        embed = discord.Embed(description=description,
+                    color=color)    
         embed.set_author(name='| Calculate Monthly Drops', icon_url=message.author.avatar_url)
 
-      ##########
-      # Also add fucntion to call populate_last_month_values for admin only
-      #####
+      elif content[1] == 'populate':
+        if message.author.id in self.admins:
+          if len(content) != 3:
+            description = 'Insufficient arguments. Please include the Airdrop month you want to calculate in the following format: YYYY-MM-01.'
+            color = discord.Color.blue()
+          else:
+            res = self.sp.populate_last_month_values(message.author.id)
+            if res['status']:
+              description="Populated infomration. Please check form to verify values."
+              color = discord.Color.green()
+            else:
+              description = 'Something went wrong populating information. ' + res['errMsg']
+              color = discord.Color.red()              
+        else:
+          description = 'You are not authorize to use this command. Please contact a mod if you think this is an error.'
+          color = discord.Color.red()   
+
+        embed = discord.Embed(description=description,
+                    color=color)         
+        embed.set_author(name='| Populate Monthly Drops manually', icon_url=message.author.avatar_url)
 
       await message.channel.send(embed=embed)
+
+      if self.newMonth:
+        res = self.sp.populate_last_month_values(self.newMonth)
+
+        description = 'Funguy bots is doing some calculation for last month! If you type a new command, it might take a little bit of time!'
+        color = discord.Color.orange()
+        embed = discord.Embed(description=description,
+                              color=color)       
+        embed.set_author(name='| Populate Monthly Drops automatically', icon_url=FunguyBot.avatar_url)
+
+        await message.channel.send(embed=embed)
+
 
   def check_update_arguments(self, input):
     if input.startsWith('+-'):
@@ -146,18 +174,16 @@ class FunguyBot(discord.Client):
         int(input[1:])
         return True
       except:
-        return False
+        return None
     
     try:
-      ########3
-      # Todo
-      #######
-      # make sure datetime is like yyyy-mm-dd
-      
-      date(input)
-      return True
+      if(input[4] == '-' && input[7] == '-'):
+        date(input)
+        return False
+      else:
+        raise Exception('Not a valid ate input')
     except:
-      return False
+      return None
 
 if __name__ == '__main__':
   keep_alive()
