@@ -93,7 +93,7 @@ class Spreadsheet():
         try:
             workSheetAirDrop = self.sp.worksheet(airdrop_date)
             if workSheetAirDrop.title == 'UserTbl':
-                Exception('This is the first time we\'re doing this!'))
+                Exception('This is the first time we\'re doing this!')
         except:
             return {
                 'status': False,

@@ -145,7 +145,7 @@ class FunguyBot(discord.Client):
               description = 'Insufficient arguments. Please include the Airdrop month you want to calculate in the following format: YYYY-MM-01.'
               color = discord.Color.blue()
             else:
-              res = self.sp.populate_last_month_values(message.author.id, content[2])
+              res = self.sp.populate_last_month_values(content[2])
               if res['status']:
                 description="Populated information. Please check form to verify values."
                 color = discord.Color.green()
@@ -165,7 +165,7 @@ class FunguyBot(discord.Client):
       if self.newMonth:
         embed = discord.Embed(description='Funguy Bot is doing some calculation for last month! If you type a new command, it might take a little bit of time!',
                               color=discord.Color.orange())       
-        embed.set_author(name='| Populate Monthly Drops Automatically')
+        embed.set_author(name='| Populate Monthly Drops Automatically', icon_url=self.user.avatar_url)
 
         await message.channel.send(embed=embed)
 
