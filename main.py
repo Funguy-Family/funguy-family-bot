@@ -32,7 +32,7 @@ class FunguyBot(discord.Client):
 
         if content[1] == 'help':
           embed = discord.Embed(title="Options",
-                                description="`help`\nLists available options.\n\n`joindrop`\nJoin the monthly airdrop!\n\n`add <wallet address> <number of Funguys> <oldest date holding Funguy NFT>`\nAdd new user to the database.\n\n`update [+/-<number of Funguys>/<oldest date holding Funguy NFT>]`\nUpdate your Funguy collection count!\n\n`view`\nCheck how many Funguy points you have for the airdrop.",
+                                description="`help`\nLists available options.\n\n`joindrop`\nJoin the monthly airdrop!\n\n`add <wallet address> <number of Funguys> <oldest date holding Funguy NFT>`\nAdd new user to the database.\n\n`update [+/-<number of Funguys>/<oldest date holding Funguy NFT (year-month-day)>]`\nUpdate your Funguy collection information!\n\n`view`\nCheck how many Funguy points you have for the airdrop.",
                                 color=discord.Color.blue())
           embed.set_author(name='| Funguy Help Menu', icon_url=message.author.avatar_url)
 
@@ -60,7 +60,6 @@ class FunguyBot(discord.Client):
             description = 'Insufficient arguments. Please include your wallet address, number of Funguys you\'ve added, and the oldest Funguy you have.'
             color = discord.Color.blue()
           else:
-            
             res = self.sp.insert_user(message.author.id, message.author.name + "#" + message.author.discriminator, content[2], content[3], content[4])
             if res['status']:
               description = 'Successfully added! You have ' + res['numFunguys'] + ' Funguys, with the oldest one being ' + res['oldestDate'] + '.'
@@ -78,22 +77,20 @@ class FunguyBot(discord.Client):
             description = 'Insufficient arguments. Please include either the number of Funguys you\'ve added or the earliest date you\'ve been holding Funguy NFTs.'
             color = discord.Color.blue()
           else:
-
-            isItNumberOfFunGuys = self.check_update_arguments(content[2])
-            if isItNumberOfFunGuys is not None:
-              if isItNumberOfFunGuys:
-                res = self.sp.update_user(message.author.id, content[2], None)
+            args = self.check_update_arguments(content[2])
+            if args:
+              if type(args) == int:
+                res = self.sp.update_user(message.author.id, args, None)
               else:
-                res = self.sp.update_user(message.author.id, None, content[2])
-
+                res = self.sp.update_user(message.author.id, None, args)
               if res['status']:
-                description = 'Successfully updated your status! You now have ' + res['numFunguys'] + ' Funguys, with the oldest one being ' + res['oldestDate'] + '.'
+                description = 'Successfully updated your status! You now have **' + res['numFunguys'] + ' Funguys**, with the oldest one being **' + res['oldestDate'] + '**.'
                 color = discord.Color.green()
               else:
                 description = 'Something went wrong updating your Funguys. ' + res['errMsg']
                 color = discord.Color.red()
             else:
-              description = 'One of your parameters are incorrect. Please check to make sure you\'re updating the number of Funguys you have (e.g. +2) or updating how long you\'ve been holding Funguys (e.g. 12/1/2020).'
+              description = 'One of your parameters are incorrect. Please check to make sure you\'re updating the number of Funguys you have (e.g. +2) or updating how long you\'ve been holding Funguys (e.g. 2020-12-1).'
               color = discord.Color.blue()
 
           embed = discord.Embed(description=description,
@@ -103,7 +100,7 @@ class FunguyBot(discord.Client):
         elif content[1] == 'view':
           res = self.sp.check_user(message.author.id)
           if res['status']:
-            description = 'Your wallet address: ' + res['walletAddress'] + ' have ' + res['numFunguys'] + ' Funguys, with the oldest one being ' + res['oldestDate'] + '.'
+            description = 'Your wallet address: ' + res['walletAddress'] + ' has **' + res['numFunguys'] + ' Funguys**, with the oldest one being **' + res['oldestDate'] + '**.'
             color = discord.Color.green()
           else:
             description = 'Something went wrong retrieving your information. ' + res['errMsg']
@@ -131,7 +128,7 @@ class FunguyBot(discord.Client):
             color = discord.Color.red()          
 
           embed = discord.Embed(description=description,
-                      color=color)    
+                                color=color)    
           embed.set_author(name='| Calculate Monthly Drops', icon_url=message.author.avatar_url)
 
         elif content[1] == 'populate':
@@ -142,7 +139,7 @@ class FunguyBot(discord.Client):
             else:
               res = self.sp.populate_last_month_values(message.author.id)
               if res['status']:
-                description="Populated infomration. Please check form to verify values."
+                description="Populated information. Please check form to verify values."
                 color = discord.Color.green()
               else:
                 description = 'Something went wrong populating information. ' + res['errMsg']
@@ -153,20 +150,25 @@ class FunguyBot(discord.Client):
 
           embed = discord.Embed(description=description,
                       color=color)         
-          embed.set_author(name='| Populate Monthly Drops manually', icon_url=message.author.avatar_url)
+          embed.set_author(name='| Populate Monthly Drops Manually', icon_url=message.author.avatar_url)
 
         await message.channel.send(embed=embed)
 
         if self.newMonth:
-          res = self.sp.populate_last_month_values(self.newMonth)
-
-          description = 'Funguy bots is doing some calculation for last month! If you type a new command, it might take a little bit of time!'
-          color = discord.Color.orange()
-          embed = discord.Embed(description=description,
-                                color=color)       
-          embed.set_author(name='| Populate Monthly Drops automatically', icon_url=FunguyBot.avatar_url)
+          embed = discord.Embed(description='Funguy Bot is doing some calculation for last month! If you type a new command, it might take a little bit of time!',
+                                color=discord.Color.orange())       
+          embed.set_author(name='| Populate Monthly Drops Automatically', icon_url=FunguyBot.avatar_url)
 
           await message.channel.send(embed=embed)
+
+          res = self.sp.populate_last_month_values(self.newMonth)
+
+          embed = discord.Embed(description='Calculations are done!',
+                                color=discord.Color.green())
+          embed.set_author(name='| Populate Monthly Drops Automatically', icon_url=FunguyBot.avatar_url)
+
+          self.newMonth = None
+
     except:
       embed = discord.Embed(
                             description="Something went wrong with the server. Contact mod",
@@ -177,30 +179,38 @@ class FunguyBot(discord.Client):
   def check_update_arguments(self, input):
     if input.startsWith('+-'):
       try:
-        int(input[1:])
+        int(input)
         return True
       except:
         return None
     
     try:
-      if(input[4] == '-' && input[7] == '-'):
-        date(input)
-        return False
+      split_input = input.split('-')
+      if len(split_input) < 3:
+        year = int(split_input[0])
+        month = int(split_input[1])
+        day = int(split_input[2])
+        
+        assert (year <= date.today().year)
+        assert (1 <= month <= 12)
+        assert (1 <= day <= 30)
+
+        return date(year, month, day)
       else:
-        raise Exception('Not a valid ate input')
+        raise Exception('Not a valid date input.')
     except:
       return None
 
 if __name__ == '__main__':
-  keep_alive()
+  # keep_alive()
 
-  admins = os.getenv('admins')
-  discord_token = os.getenv('discord_token')
+  # admins = os.getenv('admins')
+  # discord_token = os.getenv('discord_token')
   
-  FunguyBot(admins).run(discord_token)
+  # FunguyBot(admins).run(discord_token)
 
-  # f = open('credentials/funguyfamily.json')
-  # data = json.load(f)
+  f = open('credentials/funguyfamily.json')
+  data = json.load(f)
 
-  # FunguyBot(data['admins']).run(data['discord_token'])
+  FunguyBot(data['admins']).run(data['discord_token'])
   
