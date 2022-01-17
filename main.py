@@ -62,12 +62,12 @@ class FunguyBot(discord.Client):
           else:
             args1 = self.check_update_arguments(str(content[3]))
             args2 = self.check_update_arguments(str(content[4]))
-            print(args1, args2)
+
             if args1 is not None and args2 is not None:
-              res = self.sp.insert_user(message.author.id, message.author.name + "#" + message.author.discriminator, content[2], content[3], content[4])
+              res = self.sp.insert_user(message.author.id, message.author.name + "#" + message.author.discriminator, content[2], args1, str(args2))
 
               if res['status']:
-                description = 'Successfully added! You have ' + res['numFunguys'] + ' Funguys, with the oldest one being ' + res['oldestDate'] + '.'
+                description = 'Successfully added! You have ' + str(res['numFunguys']) + ' Funguys, with the oldest one being ' + res['oldestDate'] + '.'
                 color = discord.Color.green()
               else:
                 description = 'Something went wrong adding you. ' + res['errMsg']
@@ -90,7 +90,7 @@ class FunguyBot(discord.Client):
               if type(args) == int:
                 res = self.sp.update_user(message.author.id, args, None)
               else:
-                res = self.sp.update_user(message.author.id, None, args)
+                res = self.sp.update_user(message.author.id, None, str(args))
               if res['status']:
                 description = 'Successfully updated your status! You now have **' + res['numFunguys'] + ' Funguys**, with the oldest one being **' + res['oldestDate'] + '**.'
                 color = discord.Color.green()
@@ -163,19 +163,19 @@ class FunguyBot(discord.Client):
       await message.channel.send(embed=embed)
 
       if self.newMonth:
-            embed = discord.Embed(description='Funguy Bot is doing some calculation for last month! If you type a new command, it might take a little bit of time!',
-                                  color=discord.Color.orange())       
-            embed.set_author(name='| Populate Monthly Drops Automatically')
+        embed = discord.Embed(description='Funguy Bot is doing some calculation for last month! If you type a new command, it might take a little bit of time!',
+                              color=discord.Color.orange())       
+        embed.set_author(name='| Populate Monthly Drops Automatically')
 
-            await message.channel.send(embed=embed)
+        await message.channel.send(embed=embed)
 
-            res = self.sp.populate_last_month_values(self.newMonth)
+        res = self.sp.populate_last_month_values(self.newMonth)
 
-            embed = discord.Embed(description='Calculations are done!',
-                                  color=discord.Color.green())
-            embed.set_author(name='| Populate Monthly Drops Automatically')
+        embed = discord.Embed(description='Calculations are done!',
+                              color=discord.Color.green())
+        embed.set_author(name='| Populate Monthly Drops Automatically')
 
-            self.newMonth = None
+        self.newMonth = None
 
     # except:
     #   embed = discord.Embed(description="Something went wrong with the server. Contact mod",
@@ -197,7 +197,7 @@ class FunguyBot(discord.Client):
           
           assert (year <= date.today().year)
           assert (1 <= month <= 12)
-          assert (1 <= day <= 30)
+          assert (1 <= day <= 31)
           
           return date(year, month, day)
         else:

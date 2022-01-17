@@ -48,16 +48,17 @@ class Spreadsheet():
         """
         utc = pytz.timezone('UTC')
         currentAirDropDate = datetime.now(utc)
-        nameAirDropDate = str(currentAirDropDate.year) + '-' + str(currentAirDropDate.month) + '-01' 
+        currentAirDropDate = date(currentAirDropDate.year, currentAirDropDate.month, 1)
+        nameAirDropDate = str(currentAirDropDate) 
         previousAirDropName = None
 
         # Check if we are in new month and need to create a new entry
         try:
             self.sp.worksheet(nameAirDropDate)  
-            worksheet_list = self.sp.worksheets()
-            previousAirDropName = worksheet_list[-2].title           
         except Exception:
             self.create_worksheet(nameAirDropDate)
+            worksheet_list = self.sp.worksheets()
+            previousAirDropName = worksheet_list[-2].title
 
         return {
             'airdrop_date': nameAirDropDate,
@@ -73,8 +74,7 @@ class Spreadsheet():
         if not response['status']:
             return {
                 'status': response['status'],
-                'errMsg': response['errMsg'],
-                'previousAirDropName': None
+                'errMsg': response['errMsg']
             }
         
         res = self.get_current_worksheet()
@@ -90,9 +90,10 @@ class Spreadsheet():
         }
  
     def populate_last_month_values(self, airdrop_date: str):
-
         try:
             workSheetAirDrop = self.sp.worksheet(airdrop_date)
+            if workSheetAirDrop.title == 'UserTbl':
+                Exception('This is the first time we\'re doing this!'))
         except:
             return {
                 'status': False,
@@ -112,7 +113,7 @@ class Spreadsheet():
             numberOfFunGuys = workSheetUserID.cell(userIDCellRow,4).value
             dateOfOldestFunGuy = workSheetUserID.cell(userIDCellRow,5).value
 
-            workSheetAirDrop.update("B"+str(i) + ":D"+str(i), [[walletAddress,numberOfFunGuys,dateOfOldestFunGuy]])
+            workSheetAirDrop.update("B" + str(i) + ":D" + str(i), [[walletAddress,numberOfFunGuys,dateOfOldestFunGuy]])
 
         return {
             'status': True
@@ -152,7 +153,7 @@ class Spreadsheet():
         }
 
     # User Function
-    def insert_user(self, userID: int, discordID: str, walletAddress: str, numberOfFunGuys: int, dateOfOldestFunGuy: date)-> str:
+    def insert_user(self, userID: int, discordID: str, walletAddress: str, numberOfFunGuys: int, dateOfOldestFunGuy: str)-> str:
         """
         Guarantees that there is only one Discord user and only one wallet with that address.
         """
@@ -176,7 +177,7 @@ class Spreadsheet():
             'oldestDate': dateOfOldestFunGuy,
         }
 
-    def update_user(self, userID: int, numberOfFunGuys: int = None, dateOfOldestFunGuy: date = None) -> str:
+    def update_user(self, userID: int, numberOfFunGuys: int = None, dateOfOldestFunGuy: str = None):
         """
         Update Funguy status of the Discord user.
         """
