@@ -119,12 +119,12 @@ class FunguyBot(discord.Client):
           embed.set_author(name='| Check Funguys', icon_url=message.author.avatar_url)
 
         elif content[1] == 'calculate':
-          if message.author.id in self.admins:
+          if str(message.author.id) in self.admins:
             if len(content) != 3:
               description = 'Insufficient arguments. Please include the Airdrop month you want to calculate in the following format: YYYY-MM-01.'
               color = discord.Color.blue()
             else:
-              res = self.sp.calculate_TSHY_coin(message.author.id, content[2])
+              res = self.sp.calculate_TSHY_coin(content[2])
               if res['status']:
                 description = "Calculated $TSHY drops. Please check form to verify values."
                 color = discord.Color.green()
@@ -140,7 +140,7 @@ class FunguyBot(discord.Client):
           embed.set_author(name='| Calculate Monthly Drops', icon_url=message.author.avatar_url)
 
         elif content[1] == 'populate':
-          if message.author.id in self.admins:
+          if str(message.author.id) in self.admins:
             if len(content) != 3:
               description = 'Insufficient arguments. Please include the Airdrop month you want to calculate in the following format: YYYY-MM-01.'
               color = discord.Color.blue()
@@ -206,15 +206,15 @@ class FunguyBot(discord.Client):
         return None
 
 if __name__ == '__main__':
-  # keep_alive()
+  keep_alive()
 
-  # admins = os.getenv('admins')
-  # discord_token = os.getenv('discord_token')
+  admins = os.getenv('admins')
+  discord_token = os.getenv('discord_token')
   
-  # FunguyBot(admins).run(discord_token)
+  FunguyBot(admins).run(discord_token)
 
-  f = open('credentials/funguyfamily.json')
-  data = json.load(f)
+  # f = open('credentials/funguyfamily.json')
+  # data = json.load(f)
 
   FunguyBot(data['admins']).run(data['discord_token'])
   
