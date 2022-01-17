@@ -56,14 +56,14 @@ class FunguyBot(discord.Client):
             description = 'Insufficient arguments. Please include your wallet address, number of Funguys you\'ve added, and the oldest Funguy you have.'
             color = discord.Color.blue()
           else:
-            args1 = self.check_update_arguments(str(content[3]))
-            args2 = self.check_update_arguments(str(content[4]))
+            args1, _ = self.check_update_arguments(str(content[3]))
+            args2, _ = self.check_update_arguments(str(content[4]))
 
             if args1 is not None and args2 is not None:
-              res = self.sp.insert_user(message.author.id, message.author.name + "#" + message.author.discriminator, content[2], args1, str(args2))
+              res = self.sp.insert_user(message.author.id, message.author.name + "#" + message.author.discriminator, content[2], str(args1), str(args2))
 
               if res['status']:
-                description = 'Successfully added! You have ' + str(res['numFunguys']) + ' Funguys, with the oldest one being ' + res['oldestDate'] + '.'
+                description = 'Successfully added! You have **' + str(res['numFunguys']) + ' Funguys**, with the oldest one being **' + res['oldestDate'] + '**.'
                 color = discord.Color.green()
               else:
                 description = 'Something went wrong adding you. ' + res['errMsg']
@@ -184,6 +184,7 @@ class FunguyBot(discord.Client):
       str_in = str(input)
       if str_in.startswith('+') or str_in.startswith('-'):
         return int(input), True
+      int(input)
       return str(input), True
     except:
       try:
@@ -205,7 +206,7 @@ class FunguyBot(discord.Client):
         return None
 
 if __name__ == '__main__':
-  keep_alive()
+  # keep_alive()
 
   # admins = os.getenv('admins')
   # discord_token = os.getenv('discord_token')
