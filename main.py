@@ -5,10 +5,6 @@ from commands.botScript import Spreadsheet
 import os
 from keep_alive import keep_alive
 
-##############
-# To do, make bot only send messages in channel "bot-spam" 
-##############
-
 class FunguyBot(discord.Client):
   def __init__(self, admins):
     super().__init__()
@@ -85,9 +81,9 @@ class FunguyBot(discord.Client):
             description = 'Insufficient arguments. Please include either the number of Funguys you\'ve added or the earliest date you\'ve been holding Funguy NFTs.'
             color = discord.Color.blue()
           else:
-            args = self.check_update_arguments(content[2])
+            args, number_check = self.check_update_arguments(content[2])
             if args:
-              if type(args) == int:
+              if number_check:
                 res = self.sp.update_user(message.author.id, args, None)
               else:
                 res = self.sp.update_user(message.author.id, None, str(args))
@@ -124,7 +120,7 @@ class FunguyBot(discord.Client):
               description = 'Insufficient arguments. Please include the Airdrop month you want to calculate in the following format: YYYY-MM-01.'
               color = discord.Color.blue()
             else:
-              res = self.sp.calculate_TSHY_coin(content[2])
+              res = self.sp.calculate_TSHY_coin(str(content[2]))
               if res['status']:
                 description = "Calculated $TSHY drops. Please check form to verify values."
                 color = discord.Color.green()
@@ -178,14 +174,17 @@ class FunguyBot(discord.Client):
         self.newMonth = None
 
     # except:
-    #   embed = discord.Embed(description="Something went wrong with the server. Contact mod",
+    #   embed = discord.Embed(description="Something went wrong with the server. Contact mod.",
     #                         color=discord.Color.red())
     #   embed.set_author(name='| Server Error')      
     #   await message.channel.send(embed=embed)
 
   def check_update_arguments(self, input):
     try:
-      return int(input)
+      str_in = str(input)
+      if str_in.startswith('+') or str_in.startswith('-'):
+        return int(input), True
+      return str(input), True
     except:
       try:
         split_input = input.split('-')
@@ -199,7 +198,7 @@ class FunguyBot(discord.Client):
           assert (1 <= month <= 12)
           assert (1 <= day <= 31)
           
-          return date(year, month, day)
+          return date(year, month, day), False
         else:
           raise Exception('Not a valid date input.')
       except:
@@ -208,13 +207,13 @@ class FunguyBot(discord.Client):
 if __name__ == '__main__':
   keep_alive()
 
-  admins = os.getenv('admins')
-  discord_token = os.getenv('discord_token')
+  # admins = os.getenv('admins')
+  # discord_token = os.getenv('discord_token')
   
-  FunguyBot(admins).run(discord_token)
+  # FunguyBot(admins).run(discord_token)
 
-  # f = open('credentials/funguyfamily.json')
-  # data = json.load(f)
+  f = open('credentials/funguyfamily.json')
+  data = json.load(f)
 
   FunguyBot(data['admins']).run(data['discord_token'])
   
