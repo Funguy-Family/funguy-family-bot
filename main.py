@@ -23,13 +23,13 @@ class FunguyBot(discord.Client):
     """
       Bot Commands
     """
-    try:
-      if message.content.startswith('!funguy'):
-        content = [i for i in message.content.split(' ') if i != '']
-        embed = discord.Embed(title="No Command Detected",
-                                description="Type !funguy help for more information.",
-                                color=discord.Color.red())
-
+    # try:
+    if message.content.startswith('!funguy'):
+      content = [i for i in message.content.split(' ') if i != '']
+      embed = discord.Embed(title="No Command Detected",
+                              description="Type !funguy help for more information.",
+                              color=discord.Color.red())
+      if len(content) > 1:
         if content[1] == 'help':
           embed = discord.Embed(title="Options",
                                 description="`help`\nLists available options.\n\n`joindrop`\nJoin the monthly airdrop!\n\n`add <wallet address> <number of Funguys> <oldest date holding Funguy NFT>`\nAdd new user to the database.\n\n`update [+/-<number of Funguys>/<oldest date holding Funguy NFT (year-month-day)>]`\nUpdate your Funguy collection information!\n\n`view`\nCheck how many Funguy points you have for the airdrop.",
@@ -37,7 +37,7 @@ class FunguyBot(discord.Client):
           embed.set_author(name='| Funguy Help Menu', icon_url=message.author.avatar_url)
 
         elif content[1] == 'joindrop':
-          res = self.sp.join_airdrop(message.author.id)
+          res = self.sp.join_airdrop(str(message.author.id))
 
           if res['status']:
             description = 'Successfully joined airdrop! Good luck!'
@@ -46,7 +46,7 @@ class FunguyBot(discord.Client):
             # If new month, populate airdrop columns
             if res['previousAirDropName']:
               self.newMonth = res['previousAirDropName']
-  
+
           else:
             description = 'Failed to join. ' + res['errMsg']
             color = discord.Color.red()
@@ -60,12 +60,20 @@ class FunguyBot(discord.Client):
             description = 'Insufficient arguments. Please include your wallet address, number of Funguys you\'ve added, and the oldest Funguy you have.'
             color = discord.Color.blue()
           else:
-            res = self.sp.insert_user(message.author.id, message.author.name + "#" + message.author.discriminator, content[2], content[3], content[4])
-            if res['status']:
-              description = 'Successfully added! You have ' + res['numFunguys'] + ' Funguys, with the oldest one being ' + res['oldestDate'] + '.'
-              color = discord.Color.green()
+            args1 = self.check_update_arguments(str(content[3]))
+            args2 = self.check_update_arguments(str(content[4]))
+            print(args1, args2)
+            if args1 is not None and args2 is not None:
+              res = self.sp.insert_user(message.author.id, message.author.name + "#" + message.author.discriminator, content[2], content[3], content[4])
+
+              if res['status']:
+                description = 'Successfully added! You have ' + res['numFunguys'] + ' Funguys, with the oldest one being ' + res['oldestDate'] + '.'
+                color = discord.Color.green()
+              else:
+                description = 'Something went wrong adding you. ' + res['errMsg']
+                color = discord.Color.red()
             else:
-              description = 'Something went wrong adding you. ' + res['errMsg']
+              description = 'Something went wrong adding you. Please check your arguments.'
               color = discord.Color.red()
 
           embed = discord.Embed(description=description,
@@ -100,7 +108,7 @@ class FunguyBot(discord.Client):
         elif content[1] == 'view':
           res = self.sp.check_user(message.author.id)
           if res['status']:
-            description = 'Your wallet address: ' + res['walletAddress'] + ' has **' + res['numFunguys'] + ' Funguys**, with the oldest one being **' + res['oldestDate'] + '**.'
+            description = 'Your wallet address: __' + res['walletAddress'] + '__ has **' + res['numFunguys'] + ' Funguys**, with the oldest one being **' + res['oldestDate'] + '**.'
             color = discord.Color.green()
           else:
             description = 'Something went wrong retrieving your information. ' + res['errMsg']
@@ -116,7 +124,7 @@ class FunguyBot(discord.Client):
               description = 'Insufficient arguments. Please include the Airdrop month you want to calculate in the following format: YYYY-MM-01.'
               color = discord.Color.blue()
             else:
-              res = self.sp.calculate_TSHY_coin(message.author.id)
+              res = self.sp.calculate_TSHY_coin(message.author.id, content[2])
               if res['status']:
                 description = "Calculated $TSHY drops. Please check form to verify values."
                 color = discord.Color.green()
@@ -137,7 +145,7 @@ class FunguyBot(discord.Client):
               description = 'Insufficient arguments. Please include the Airdrop month you want to calculate in the following format: YYYY-MM-01.'
               color = discord.Color.blue()
             else:
-              res = self.sp.populate_last_month_values(message.author.id)
+              res = self.sp.populate_last_month_values(message.author.id, content[2])
               if res['status']:
                 description="Populated information. Please check form to verify values."
                 color = discord.Color.green()
@@ -152,54 +160,50 @@ class FunguyBot(discord.Client):
                       color=color)         
           embed.set_author(name='| Populate Monthly Drops Manually', icon_url=message.author.avatar_url)
 
-        await message.channel.send(embed=embed)
-
-        if self.newMonth:
-          embed = discord.Embed(description='Funguy Bot is doing some calculation for last month! If you type a new command, it might take a little bit of time!',
-                                color=discord.Color.orange())       
-          embed.set_author(name='| Populate Monthly Drops Automatically', icon_url=FunguyBot.avatar_url)
-
-          await message.channel.send(embed=embed)
-
-          res = self.sp.populate_last_month_values(self.newMonth)
-
-          embed = discord.Embed(description='Calculations are done!',
-                                color=discord.Color.green())
-          embed.set_author(name='| Populate Monthly Drops Automatically', icon_url=FunguyBot.avatar_url)
-
-          self.newMonth = None
-
-    except:
-      embed = discord.Embed(
-                            description="Something went wrong with the server. Contact mod",
-                            color=discord.Color.red())
-      embed.set_author(name='| Server Error', icon_url=FunguyBot.avatar_url)      
       await message.channel.send(embed=embed)
 
+      if self.newMonth:
+            embed = discord.Embed(description='Funguy Bot is doing some calculation for last month! If you type a new command, it might take a little bit of time!',
+                                  color=discord.Color.orange())       
+            embed.set_author(name='| Populate Monthly Drops Automatically')
+
+            await message.channel.send(embed=embed)
+
+            res = self.sp.populate_last_month_values(self.newMonth)
+
+            embed = discord.Embed(description='Calculations are done!',
+                                  color=discord.Color.green())
+            embed.set_author(name='| Populate Monthly Drops Automatically')
+
+            self.newMonth = None
+
+    # except:
+    #   embed = discord.Embed(description="Something went wrong with the server. Contact mod",
+    #                         color=discord.Color.red())
+    #   embed.set_author(name='| Server Error')      
+    #   await message.channel.send(embed=embed)
+
   def check_update_arguments(self, input):
-    if input.startsWith('+-'):
+    try:
+      return int(input)
+    except:
       try:
-        int(input)
-        return True
+        split_input = input.split('-')
+
+        if len(split_input) == 3:
+          year = int(split_input[0])
+          month = int(split_input[1])
+          day = int(split_input[2])
+          
+          assert (year <= date.today().year)
+          assert (1 <= month <= 12)
+          assert (1 <= day <= 30)
+          
+          return date(year, month, day)
+        else:
+          raise Exception('Not a valid date input.')
       except:
         return None
-    
-    try:
-      split_input = input.split('-')
-      if len(split_input) < 3:
-        year = int(split_input[0])
-        month = int(split_input[1])
-        day = int(split_input[2])
-        
-        assert (year <= date.today().year)
-        assert (1 <= month <= 12)
-        assert (1 <= day <= 30)
-
-        return date(year, month, day)
-      else:
-        raise Exception('Not a valid date input.')
-    except:
-      return None
 
 if __name__ == '__main__':
   # keep_alive()

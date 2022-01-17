@@ -26,9 +26,9 @@ class Spreadsheet():
 
 
         scope = ['https://www.googleapis.com/auth/drive']
-        credentials = ServiceAccountCredentials.from_json_keyfile_dict(variables_keys, scope)
+        # credentials = ServiceAccountCredentials.from_json_keyfile_dict(variables_keys, scope)
 
-        # credentials = ServiceAccountCredentials.from_json_keyfile_name('credentials/funguyfamily.json', scope)
+        credentials = ServiceAccountCredentials.from_json_keyfile_name('credentials/funguyfamily.json', scope)
 
         gc = gspread.authorize(credentials)    
         self.sp = gc.open('FunGuy_test')     
@@ -59,10 +59,13 @@ class Spreadsheet():
         except Exception:
             self.create_worksheet(nameAirDropDate)
 
-        return [nameAirDropDate, previousAirDropName]
+        return {
+            'airdrop_date': nameAirDropDate,
+            'prev_airdrop_date': previousAirDropName
+        }
 
     # Airdrop Functions
-    def join_airdrop(self, userID: str) -> bool:
+    def join_airdrop(self, userID: str):
         """
         Add user to airdrop.
         """
@@ -74,29 +77,26 @@ class Spreadsheet():
                 'previousAirDropName': None
             }
         
-        nameAirDropDate = self.get_current_worksheet()
-        nameAirDropDateName = nameAirDropDate[0]
+        res = self.get_current_worksheet()
 
-        workSheet = self.sp.worksheet(nameAirDropDateName)
-        userIDRow = workSheet.find(response.userID)
+        workSheet = self.sp.worksheet(res['airdrop_date'])
+        userIDRow = workSheet.find(userID)
         if userIDRow is None:
-            workSheet.append_row([response.userID])
-            
+            workSheet.append_row([userID])
+
         return {
             'status': response['status'],
-            'errMsg': response['errMsg'],
-            'previousAirDropName': nameAirDropDateName[1]
+            'previousAirDropName': res['prev_airdrop_date']
         }
  
-    def populate_last_month_values(self, nameAirDropDate):
+    def populate_last_month_values(self, airdrop_date: str):
 
         try:
-            workSheetAirDrop = self.sp.worksheet(nameAirDropDate)
-        except Exception:
+            workSheetAirDrop = self.sp.worksheet(airdrop_date)
+        except:
             return {
                 'status': False,
-                'errMsg': "Invalid form name.",
-                'nameAirDropDate': nameAirDropDate
+                'errMsg': "Invalid form name."
             }
 
         workSheetUserID = self.sp.worksheet("UserTbl")
@@ -115,19 +115,16 @@ class Spreadsheet():
             workSheetAirDrop.update("B"+str(i) + ":D"+str(i), [[walletAddress,numberOfFunGuys,dateOfOldestFunGuy]])
 
         return {
-            'status': True,
-            'errMsg': None,
-            'nameAirDropDate': nameAirDropDate
+            'status': True
         }
 
-    def calculate_TSHY_coin(self, nameAirDropDate):
+    def calculate_TSHY_coin(self, airdrop_date: str):
         try:
-            workSheetAirDrop = self.sp.worksheet(nameAirDropDate)
-        except Exception:
+            workSheetAirDrop = self.sp.worksheet(airdrop_date)
+        except:
             return {
                 'status': False,
-                'errMsg': "Invalid form name.",
-                'nameAirDropDate': nameAirDropDate
+                'errMsg': "Invalid form name."
             }
         
         listOfUserID = workSheetAirDrop.col_values(1)
@@ -141,7 +138,7 @@ class Spreadsheet():
             numberOfFunGuys = workSheetAirDrop.cell(userIDCellRow,3).value
             dateOfOldestFunGuy = workSheetAirDrop.cell(userIDCellRow,4).value
 
-            endDate = date.fromisoformat(nameAirDropDate)
+            endDate = date.fromisoformat(airdrop_date)
             startDate = date.fromisoformat(dateOfOldestFunGuy)
 
             months = (endDate.year - startDate.year) * 12 + endDate.month - startDate.month + 1
@@ -151,9 +148,7 @@ class Spreadsheet():
             workSheetAirDrop.update_cell(i, 5, coins)
 
         return {
-            'status': True,
-            'errMsg': None,
-            'nameAirDropDate': nameAirDropDate
+            'status': True
         }
 
     # User Function
@@ -177,7 +172,6 @@ class Spreadsheet():
 
         return {
             'status': True,
-            'errMsg': None,
             'numFunguys': numberOfFunGuys,
             'oldestDate': dateOfOldestFunGuy,
         }
@@ -193,8 +187,6 @@ class Spreadsheet():
             return {
                 'status': False,
                 'errMsg': response['errMsg'],
-                'numFunguys': -1,
-                'oldestDate': -1
             }
 
         if(numberOfFunGuys):
@@ -203,7 +195,6 @@ class Spreadsheet():
             workSheet.update_cell(response['userIDRow'].row, 5, dateOfOldestFunGuy)
         return {
             'status': True,
-            'errMsg': None,
             'numFunguys': workSheet.cell(response['userIDRow'].row, 4).value,
             'oldestDate': response['oldestDate']
         }
@@ -218,10 +209,7 @@ class Spreadsheet():
         if not userIDRow:
             return {
                 'status': False,
-                'errMsg': 'User not found.',
-                'discordIDRow': -1,
-                'numFunguys': -1,
-                'oldestDate': -1
+                'errMsg': 'User not found.'
             }
 
         if walletAddress:
@@ -229,19 +217,15 @@ class Spreadsheet():
             if not walletAddressRow and walletAddress:
                 return {
                     'status': False,
-                    'errMsg': 'Wallet address not found.',
-                    'discordIDRow': -1,
-                    'numFunguys': -1,
-                    'oldestDate': -1
+                    'errMsg': 'Wallet address not found.'
                 }
 
         return {
             'status': True,
-            'errMsg': None,
             'userIDRow': userIDRow,
+            'walletAddress': workSheet.cell(userIDRow.row, 3).value,
             'numFunguys': workSheet.cell(userIDRow.row, 4).value,
-            'oldestDate': workSheet.cell(userIDRow.row, 5).value,
-            'walletAddress': workSheet.cell(userIDRow.row, 3).value
+            'oldestDate': workSheet.cell(userIDRow.row, 5).value
         }
 
 if __name__ == '__main__':
